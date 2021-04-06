@@ -1,0 +1,1 @@
+` make push && make push-to-kind`
