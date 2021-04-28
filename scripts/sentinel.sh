@@ -1,5 +1,5 @@
 #!/bin/bash
-cp ../conf/sentinel.conf /data/sentinel.conf
+cp /conf/sentinel.conf /data/sentinel.conf
 
 
 echo " got scripts............"

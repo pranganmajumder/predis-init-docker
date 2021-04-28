@@ -3,8 +3,8 @@ SHELL=/bin/bash -o pipefail
 REGISTRY ?= pranganmajumder
 BIN      := predis-init
 IMAGE    := $(REGISTRY)/$(BIN)
-TAG      := $(shell git describe --exact-match --abbrev=0 2>/dev/null || echo "")
-TAG      := 0.0.2
+#TAG      := $(shell git describe --exact-match --abbrev=0 2>/dev/null || echo "")
+TAG      := 0.0.3
 
 
 .PHONY: push

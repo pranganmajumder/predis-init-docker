@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-echo "-----------run.sh variable-------------------$@-----------------------"
-cp /config/redis.conf /data/redis.conf
+echo "-----------run.sh variable------------------------------------------"
+cp /conf/redis.conf /data/redis.conf
 echo -e "\nreplica-announce-ip $HOSTNAME.predis-svc.default.svc" >>/data/redis.conf
 replica_of_sentinel=$REPLICA_OF_SENTINEL
 down=5000
