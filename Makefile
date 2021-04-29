@@ -4,7 +4,7 @@ REGISTRY ?= pranganmajumder
 BIN      := predis-init
 IMAGE    := $(REGISTRY)/$(BIN)
 #TAG      := $(shell git describe --exact-match --abbrev=0 2>/dev/null || echo "")
-TAG      := 0.0.3
+TAG      := 0.0.4
 
 
 .PHONY: push
