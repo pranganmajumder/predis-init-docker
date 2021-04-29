@@ -63,25 +63,15 @@ else
     if [[ $PONG == "PONG" ]]; then
         echo "---- paichi pong   for $HOSTNAME ------- "
         echo -e "\nreplicaof $REDIS_MASTER_HOST $REDIS_MASTER_PORT_NUMBER" >> /data/redis.conf
-        exec redis-server /data/redis.conf &
-        pid=$!
-        for i in {90..0}; do
-            out=$(redis-cli -h $(hostname) -p 6379 ping)
-            echo "Trying to ping: Step='$i', Got='$out'"
-            if [[ "$out" == "PONG" ]]; then
-                break
-            fi
-            echo -n .
-            sleep 1
-        done
 
         echo "reseting sentinel  -------------- "
         for (( i=0; i<$replica_of_sentinel; i++ ))
-            do
-                RESET_SENTINEL=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel reset mymaster)
-            done
-        echo "before wait  -------------- "
-        wait $pid
+        do
+              RESET_SENTINEL=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel reset mymaster)
+        done
+
+        exec redis-server /data/redis.conf &
+
     else
         echo "make 0th pod master & the rest of it as the slave of master 0th , this is the final configuration"
         echo "Remove master from every sentinel --------------------- "
