@@ -70,31 +70,36 @@ else
               RESET_SENTINEL=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel reset mymaster)
         done
 
-        exec redis-server /data/redis.conf &
+        exec redis-server /data/redis.conf
 
     else
         echo "make 0th pod master & the rest of it as the slave of master 0th , this is the final configuration"
         echo "Remove master from every sentinel --------------------- "
-        for (( i=0; i<$replica_of_sentinel; i++ ))
-        do
-            REMOVE_MASTER=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 SENTINEL REMOVE mymaster)
-        done
 
-        echo "add other sentinel configuration with all other sentinel---------------------------"
-        for (( i=0; i<$replica_of_sentinel; i++ ))
-        do
-            ADD_MASTER=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 SENTINEL MONITOR mymaster predis-sts-0.predis-svc.default.svc 6379 2)
-            ADD_FAILOVER_TIME_OUT=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel set mymaster failover-timeout $timeout)
-            ADD_DOWN_AFTER_MILLISECONDS=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel set mymaster down-after-milliseconds $down)
-        done
+        if [[ $(hostname) == "predis-sts-0" ]]; then
+            for (( i=0; i<$replica_of_sentinel; i++ ))
+            do
+                REMOVE_MASTER=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 SENTINEL REMOVE mymaster)
+            done
+        fi
 
-         if [[ $(hostname) == "predis-sts-0" ]]; then
+        if [[ $(hostname) == "predis-sts-0" ]]; then
+            echo "add other sentinel configuration with all other sentinel---------------------------"
+            for (( i=0; i<$replica_of_sentinel; i++ ))
+            do
+                ADD_MASTER=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 SENTINEL MONITOR mymaster predis-sts-0.predis-svc.default.svc 6379 2)
+                ADD_FAILOVER_TIME_OUT=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel set mymaster failover-timeout $timeout)
+                ADD_DOWN_AFTER_MILLISECONDS=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel set mymaster down-after-milliseconds $down)
+            done
+        fi
+
+        if [[ $(hostname) == "predis-sts-0" ]]; then
             echo "make predis-sts-0 as the master -----"
             exec redis-server /data/redis.conf
         else
             echo "connected as slave------------------------- "
             echo -e "\nreplicaof predis-sts-0.predis-svc.default.svc 6379" >> /data/redis.conf
             exec redis-server /data/redis.conf
-        fi
+       fi
     fi
 fi
