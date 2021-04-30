@@ -6,6 +6,37 @@ replica_of_sentinel=$REPLICA_OF_SENTINEL
 down=5000
 timeout=5000
 
+
+function find_master_hosts() {
+    RES=0
+    local found=0
+
+    for line in $REPLICAS_INFO_FROM_SENTINEL; do
+#      echo "line  =  $line---------"
+      #do operation
+      if [[ "$line" == "master-host" ]]; then
+          found=1
+          echo "found = 1 \n"
+          continue
+      fi
+      if [ "$found" == "1" ]; then
+          echo "line  =   $line--- len  =  ${#line}"
+      fi
+
+      if [[ "$found" == "1" && "$line" == "?" ]]; then
+
+          found=0
+          RES=1
+          echo "found ? mark  , breaking looop     "
+          break
+      fi
+    done
+    echo "terminating find_master_hosts function   \n\n\n "
+
+}
+
+
+
 flag=1
 not_exists_dns_entry() {
    myip=$(hostname -i)
@@ -29,6 +60,7 @@ do
   sleep 1
 done
 echo "..........$HOSTNAME------------"
+
 
 
 
@@ -63,14 +95,43 @@ else
     if [[ $PONG == "PONG" ]]; then
         echo "---- paichi pong   for $HOSTNAME ------- "
         echo -e "\nreplicaof $REDIS_MASTER_HOST $REDIS_MASTER_PORT_NUMBER" >> /data/redis.conf
-
         echo "reseting sentinel  -------------- "
+        exec redis-server /data/redis.conf &
+        pid=$!
+        echo "After exec  -------------- "
+        for i in {90..0}; do
+            out=$(redis-cli -h $(hostname) -p 6379 ping)
+            echo "Trying to ping: Step='$i', Got='$out'"
+            if [[ "$out" == "PONG" ]]; then
+                break
+            fi
+            echo -n .
+            sleep 1
+        done
         for (( i=0; i<$replica_of_sentinel; i++ ))
         do
-              RESET_SENTINEL=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel reset mymaster)
+            RESET_SENTINEL=$(redis-cli -h sentinel-sts-$i.sentinel-svc.default.svc -p 26379 sentinel reset mymaster)
         done
 
-        exec redis-server /data/redis.conf
+        while true
+        do
+          REPLICAS_INFO_FROM_SENTINEL=$(redis-cli -h sentinel-svc.default.svc -p 26379 sentinel replicas mymaster)
+          echo " len of REPLICAS_INFO_FROM_SENTINEL  = ${#REPLICAS_INFO_FROM_SENTINEL}"
+          if [[ "${#REPLICAS_INFO_FROM_SENTINEL}" == 0 ]]; then
+              sleep 1
+              continue
+          fi
+          find_master_hosts $REPLICAS_INFO_FROM_SENTINEL
+           if [[ "$RES" == "0" ]]; then
+               echo "RES ===== 0 "
+               break 
+           fi
+           echo "RES ==== 1 "
+           sleep 1
+        done
+
+        echo "before wait  -------------- "
+        wait $pid
 
     else
         echo "make 0th pod master & the rest of it as the slave of master 0th , this is the final configuration"
