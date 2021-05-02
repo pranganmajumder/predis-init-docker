@@ -1,7 +1,6 @@
 #!/bin/bash
 
 cp /conf/redis.conf /data/redis.conf
-echo -e "\nreplica-announce-ip $HOSTNAME.predis-svc.default.svc" >>/data/redis.conf
 replica_of_sentinel=$REPLICA_OF_SENTINEL
 down=5000
 timeout=5000
@@ -149,7 +148,7 @@ else
     pid=$!
     echo "After exec  -------------- "
     for i in {90..0}; do
-      out=$(redis-cli -h $(hostname) -p 6379 ping)
+      out=$(redis-cli -h $(hostname).predis-svc.default.svc -p 6379 ping)
       echo "Trying to ping: Step='$i', Got='$out'"
       if [[ "$out" == "PONG" ]]; then
         break
