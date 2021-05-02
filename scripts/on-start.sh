@@ -149,7 +149,7 @@ else
     pid=$!
     echo "After exec  -------------- "
     for i in {90..0}; do
-      out=$(redis-cli -h $(hostname) -p 6379 ping)
+      out=$(redis-cli -h $(hostname).predis-svc.default.svc -p 6379 ping)
       echo "Trying to ping: Step='$i', Got='$out'"
       if [[ "$out" == "PONG" ]]; then
         break
